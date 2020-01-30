@@ -15,6 +15,7 @@ INVALID_CHARS = r'[\\/:*?\"<>|]'
 def main(args):
     flist = args.folders
     convert_args = []
+    failure = args.failure if args.failure is not None else 'failure.txt'
 
     for folder in flist:
         with open(os.path.join(folder, INFO_NAME)) as fp:
@@ -22,14 +23,14 @@ def main(args):
             title = line.split(': ', maxsplit=1)[-1].strip()
             title = re.sub(INVALID_CHARS, '', title)
 
-        convert_args.append((title, folder, args.dir, args.fail))
+        convert_args.append((title, folder, args.directory, failure))
 
     with Pool() as p:
         p.map_async(work, convert_args)
         p.close()
         p.join()
 
-    if os.path.exists(args.fail):
+    if os.path.exists(failure):
         print()
         print('failure:')
 
@@ -37,6 +38,9 @@ def main(args):
             for l in fp:
                 l = l.strip()
                 print(l.split(';')[0])
+
+        if args.failure is None:
+            os.remove(failure)
 
 
 def work(args):
@@ -81,12 +85,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('folders', nargs='*', help='folders to be convert')
     parser.add_argument('-i', '--input', help='input directories list')
-    parser.add_argument('-d', '--dir', help='output directory', default='')
-    parser.add_argument('--fail', help='output failure', default='fail.txt')
+    parser.add_argument('-d', '--directory',
+                        help='output directory', default='')
+    parser.add_argument('-f', '--failure',
+                        help='file that failure will be log to')
     args = parser.parse_args()
 
-    if os.path.exists(args.fail):
-        os.remove(args.fail)
+    if args.failure is not None and os.path.exists(args.failure):
+        os.remove(args.failure)
 
     if args.input is not None:
         with open(args.input) as fp:
