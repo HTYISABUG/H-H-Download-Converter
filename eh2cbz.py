@@ -5,6 +5,7 @@ import sys
 import argparse
 import re
 
+from pprint import pprint
 from multiprocessing import Pool
 from subprocess import call
 
@@ -22,6 +23,13 @@ def main(args):
             line = fp.readline()
             title = line.split(': ', maxsplit=1)[-1].strip()
             title = re.sub(INVALID_CHARS, '', title)
+
+        if f'{title}.cbz' in args.exclude:
+            if len(title) > 64:
+                title = title[:64]
+
+            print(f'{title}.cbz has been excluded, skip...')
+            continue
 
         convert_args.append((title, folder, args.directory, failure))
 
@@ -91,6 +99,7 @@ if __name__ == '__main__':
                         help='output directory', default='')
     parser.add_argument('-f', '--failure',
                         help='file that failure will be log to')
+    parser.add_argument('-e', '--exclude', help='file list to be exclude')
     args = parser.parse_args()
 
     if args.failure is not None and os.path.exists(args.failure):
@@ -99,5 +108,11 @@ if __name__ == '__main__':
     if args.input is not None:
         with open(args.input) as fp:
             args.folders = [l.strip() for l in fp.readlines()]
+
+    if args.exclude is not None:
+        with open(args.exclude) as fp:
+            args.exclude = [l.strip() for l in fp.readlines()]
+    else:
+        args.exclude = []
 
     main(args)
