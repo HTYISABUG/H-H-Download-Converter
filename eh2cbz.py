@@ -25,6 +25,9 @@ def main(args):
 
         convert_args.append((title, folder, args.directory, failure))
 
+    if not os.path.exists(args.directory):
+        os.makedirs(args.directory, 0o755)
+
     with Pool() as p:
         p.map_async(work, convert_args)
         p.close()
@@ -44,40 +47,39 @@ def main(args):
 
 
 def work(args):
-    if not os.path.exists(args[2]):
-        os.makedirs(args[2], 0o755)
+    title, folder, directory, failure = args
 
-    output_path = os.path.join(args[2], args[0])
+    output_path = os.path.join(directory, title)
 
     if os.path.exists(f'{output_path}.cbz'):
-        if len(output_path) > 32:
+        if len(output_path) > 64:
             output_path = output_path[:64]
 
         print(f'{output_path}... already exists, skip...')
         return
 
-    command = ['zip', '-jr', f'{output_path}.zip', args[1]]
+    command = ['zip', '-jr', f'{output_path}.zip', folder]
     ret = call(command)
 
     if ret != 0:
-        with open(args[3], 'a') as fp:
-            print(args[0], args[1], sep=';', file=fp)
+        with open(failure, 'a') as fp:
+            print(title, folder, sep=';', file=fp)
         return
 
     command = ['zip', '-d', f'{output_path}.zip', INFO_NAME]
     ret = call(command)
 
     if ret != 0:
-        with open(args[3], 'a') as fp:
-            print(args[0], args[1], sep=';', file=fp)
+        with open(failure, 'a') as fp:
+            print(title, folder, sep=';', file=fp)
         return
 
     command = ['mv', f'{output_path}.zip', f'{output_path}.cbz']
     ret = call(command)
 
     if ret != 0:
-        with open(args[3], 'a') as fp:
-            print(args[0], args[1], sep=';', file=fp)
+        with open(failure, 'a') as fp:
+            print(title, folder, sep=';', file=fp)
         return
 
 
